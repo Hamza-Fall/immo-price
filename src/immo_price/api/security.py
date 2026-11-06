@@ -1,0 +1,1 @@
+"""Authentification par clé API."""
