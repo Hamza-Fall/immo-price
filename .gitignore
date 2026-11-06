@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Projet immo-price
+data/
+models/
+.env
+.venv/
+coverage.xml
+htmlcov/
+docs/_build/
