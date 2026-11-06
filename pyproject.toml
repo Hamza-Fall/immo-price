@@ -43,3 +43,21 @@ immo-api = "immo_price.api.main:run"
 
 [tool.poetry]
 packages = [{ include = "immo_price", from = "src" }]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
