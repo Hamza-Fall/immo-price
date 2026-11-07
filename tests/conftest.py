@@ -1,9 +1,32 @@
 """Fixtures partagées par les tests."""
 
+import numpy as np
 import pandas as pd
 import pytest
+from fastapi.testclient import TestClient
+
+from immo_price.api.main import app
+from immo_price.config import get_settings
+from immo_price.train import train_model
 
 NAN = float("nan")
+
+
+def make_clean_df(n: int = 300) -> pd.DataFrame:
+    """Construit un jeu nettoyé synthétique, avec un signal par code postal."""
+    rng = np.random.default_rng(0)
+    index = np.arange(n)
+    postal = np.array(["94000", "94270", "94120"])
+    base = np.array([5000.0, 7000.0, 6000.0])
+    return pd.DataFrame(
+        {
+            "surface": rng.uniform(15, 120, n),
+            "nombre_pieces": rng.integers(1, 6, n),
+            "code_postal": postal[index % 3],
+            "annee": 2022 + (index // 3) % 3,
+            "prix_m2": base[index % 3] + rng.normal(0, 150, n),
+        }
+    )
 
 
 @pytest.fixture
@@ -42,3 +65,26 @@ def raw_df() -> pd.DataFrame:
         ("I", "2024-03-01", "Vente", 400000, "94000", None, NAN, NAN),
     ]
     return pd.DataFrame(rows, columns=columns)
+
+
+@pytest.fixture
+def clean_df() -> pd.DataFrame:
+    """Jeu nettoyé synthétique sur trois années."""
+    return make_clean_df()
+
+
+@pytest.fixture(scope="session")
+def trained_model():
+    """Modèle entraîné une seule fois pour toute la session de tests."""
+    model, _ = train_model(make_clean_df())
+    return model
+
+
+@pytest.fixture
+def client(monkeypatch, trained_model):
+    """Client de test de l'API, avec modèle chargé et clé API configurée."""
+    monkeypatch.setenv("IMMO_API_KEY", "test-key")
+    get_settings.cache_clear()
+    app.state.model = trained_model
+    yield TestClient(app)
+    get_settings.cache_clear()
