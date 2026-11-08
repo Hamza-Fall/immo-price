@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: poetry
+
+      - name: Installer les dépendances
+        run: poetry install
+
+      - name: Lint (Ruff)
+        run: poetry run ruff check .
+
+      - name: Format (Ruff)
+        run: poetry run ruff format --check .
+
+      - name: Types (mypy)
+        run: poetry run mypy src
+
+      - name: Tests et couverture
+        run: poetry run pytest
+
+      - name: Documentation Sphinx
+        run: poetry run sphinx-build -b html docs docs/_build/html
+
+      - name: Construire le package
+        run: poetry build
+
+      - name: Publier les artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.python-version }}
+          path: dist/
